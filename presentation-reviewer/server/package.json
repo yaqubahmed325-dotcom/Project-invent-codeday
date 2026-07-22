@@ -1,0 +1,24 @@
+{
+  "name": "presentation-reviewer-server",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Backend for AI Presentation Reviewer MVP — Project Invent - Codeday — extracts slide text and evaluates it with GitHub Copilot.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "dependencies": {
+    "@github/copilot-sdk": "^1.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "jszip": "^3.10.1",
+    "multer": "^2.2.0",
+    "pdf-parse": "^1.1.1",
+    "xml2js": "^0.6.2"
+  }
+}
