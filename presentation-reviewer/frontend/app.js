@@ -1,5 +1,7 @@
 // Point this at your deployed backend before publishing to GitHub Pages.
-const API_BASE_URL = "http://localhost:3000";
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:3000'
+  : 'https://ai-presentation-reveiwer.onrender.com';
 
 const form = document.getElementById("upload-form");
 const fileInput = document.getElementById("deck");
