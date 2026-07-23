@@ -67,7 +67,7 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: "Unexpected server error" });
 });
 
-export { app };
+export default app;
 
 if (process.env.VERCEL !== "1") {
   app.listen(PORT, () => {
