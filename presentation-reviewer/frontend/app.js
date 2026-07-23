@@ -153,7 +153,8 @@ form.addEventListener("submit", async (e) => {
   formData.append("deck", file);
 
   try {
-  const res = await fetch(`${REQUEST_API_URL}/api/evaluate`, {
+    const evaluateUrl = new URL("/api/evaluate", `${REQUEST_API_URL}/`);
+    const res = await fetch(evaluateUrl, {
       method: "POST",
       body: formData,
     });
