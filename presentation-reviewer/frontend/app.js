@@ -1,3 +1,14 @@
+const express = require('express');
+const cors = require('cors'); // 1. Require cors
+
+const app = express();
+
+// 2. Add this middleware right here
+app.use(cors({
+    origin: 'https://yaqubahmed325-dotcom.github.io'
+}));
+
+// Your other routes and app.use statements go below this...
 // Use the deployed backend by default; local hosts use the local server.
 const API_URL = 'https://project-invent-codeday.vercel.app/';
 const LOCAL_API_URL = 'http://localhost:3000';
