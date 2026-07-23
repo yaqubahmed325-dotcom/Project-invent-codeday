@@ -67,9 +67,13 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: "Unexpected server error" });
 });
 
-app.listen(PORT, () => {
-  console.log(`Presentation reviewer backend listening on port ${PORT}`);
-});
+export { app };
+
+if (process.env.VERCEL !== "1") {
+  app.listen(PORT, () => {
+    console.log(`Presentation reviewer backend listening on port ${PORT}`);
+  });
+}
 
 // The Copilot SDK drives a subprocess over JSON-RPC and can surface failures
 // (bad/absent auth, model-not-found, dropped connection) as async errors that

@@ -1,6 +1,5 @@
-// Your other routes and app.use statements go below this...
 // Use the deployed backend by default; local hosts use the local server.
-const API_URL = 'https://project-invent-codeday.vercel.app/';
+const API_URL = 'https://project-invent-codeday.vercel.app';
 const LOCAL_API_URL = 'http://localhost:3000';
 const REQUEST_API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
   ? LOCAL_API_URL
@@ -154,7 +153,7 @@ form.addEventListener("submit", async (e) => {
   formData.append("deck", file);
 
   try {
-  const res = await fetch(`https://project-invent-codeday.vercel.app/api/evaluate`, {
+  const res = await fetch(`${REQUEST_API_URL}/api/evaluate`, {
       method: "POST",
       body: formData,
     });
