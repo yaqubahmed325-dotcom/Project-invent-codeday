@@ -1,5 +1,3 @@
-import { CopilotClient, approveAll } from "@github/copilot-sdk";
-
 const RUBRIC_KEYS = [
   "organization",
   "clarity",
@@ -7,7 +5,7 @@ const RUBRIC_KEYS = [
   "professionalism",
   "overall_impression",
 ];
-
+ 
 const SYSTEM_PROMPT = `You are an expert presentation coach evaluating a slide deck.
 Score the deck against this fixed rubric, 0-10 points per category:
 - organization: logical flow, clear structure, good pacing
@@ -15,7 +13,7 @@ Score the deck against this fixed rubric, 0-10 points per category:
 - content_quality: strong evidence, relevant data, well-supported claims
 - professionalism: polish, consistency, no typos/formatting issues (infer from text only)
 - overall_impression: holistic quality
-
+ 
 Respond with ONLY valid JSON, no markdown fences, no commentary, in exactly this shape:
 {
   "scores": {
@@ -28,7 +26,7 @@ Respond with ONLY valid JSON, no markdown fences, no commentary, in exactly this
   "feedback": ["<short actionable bullet>", "..."]
 }
 Include 3-6 feedback bullets. Do not include any text outside the JSON object.`;
-
+ 
 function slidesToPrompt(slides) {
   const body = slides
     .map((s) => {
@@ -39,16 +37,16 @@ function slidesToPrompt(slides) {
     .join("\n\n");
   return `Evaluate this slide deck:\n\n${body}`;
 }
-
+ 
 function extractJson(raw) {
-  // Copilot may still wrap output in ```json fences despite instructions — strip them.
+  // Gemini may still wrap output in ```json fences despite instructions — strip them.
   const cleaned = raw.replace(/```json/gi, "").replace(/```/g, "").trim();
   const start = cleaned.indexOf("{");
   const end = cleaned.lastIndexOf("}");
   if (start === -1 || end === -1) throw new Error("No JSON object found in response");
   return JSON.parse(cleaned.slice(start, end + 1));
 }
-
+ 
 function validateResult(result) {
   if (!result.scores || typeof result.scores !== "object") {
     throw new Error("Missing 'scores' object");
@@ -64,46 +62,60 @@ function validateResult(result) {
   }
   return result;
 }
-
+ 
 /**
- * Runs one prompt through a fresh Copilot CLI session and returns the raw
- * assistant text. Starting/stopping a client per request is simplest for an
- * MVP; see README for notes on reusing a long-lived client under load.
+ * Sends one prompt to the Gemini API over plain HTTPS and returns the raw
+ * assistant text. This is a stateless REST call (no subprocess, no native
+ * binary), so it works fine inside a Vercel serverless function — unlike the
+ * old Copilot-CLI-based approach.
  */
-async function runCopilotPrompt(prompt) {
-  // The SDK authenticates via the `gitHubToken` option (or, if omitted, a
-  // logged-in user via `gh`/stored OAuth). It does NOT read our
-  // COPILOT_GITHUB_TOKEN env var on its own, so pass it through explicitly.
-  const gitHubToken = process.env.COPILOT_GITHUB_TOKEN;
-  const client = new CopilotClient(gitHubToken ? { gitHubToken } : {});
+async function runGeminiPrompt(prompt) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error("GEMINI_API_KEY is not set");
+ 
+  const model = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+ 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 60_000);
+ 
+  let res;
   try {
-    await client.start();
-    const session = await client.createSession({
-      model: process.env.COPILOT_MODEL || "gpt-5",
-      onPermissionRequest: approveAll,
-      // "replace" so the deck-judge prompt is the entire system message —
-      // we don't want Copilot's default coding-agent prompt/tool behavior here.
-      systemMessage: { mode: "replace", content: SYSTEM_PROMPT },
+    res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      signal: controller.signal,
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.4 },
+      }),
     });
-    try {
-      const response = await session.sendAndWait({ prompt }, 60_000);
-      if (!response) throw new Error("Copilot did not respond within the timeout");
-      return response.data.content;
-    } finally {
-      await session.disconnect();
-    }
+  } catch (err) {
+    if (err.name === "AbortError") throw new Error("Gemini did not respond within the timeout");
+    throw err;
   } finally {
-    await client.stop();
+    clearTimeout(timeout);
   }
+ 
+  if (!res.ok) {
+    const errBody = await res.text().catch(() => "");
+    throw new Error(`Gemini API error ${res.status}: ${errBody.slice(0, 300)}`);
+  }
+ 
+  const data = await res.json();
+  const text = data?.candidates?.[0]?.content?.parts?.map((p) => p.text).join("") ?? "";
+  if (!text) throw new Error("Gemini returned an empty response");
+  return text;
 }
-
+ 
 export async function evaluateDeck(slides) {
   const prompt = slidesToPrompt(slides);
-
+ 
   let lastError;
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      const raw = await runCopilotPrompt(
+      const raw = await runGeminiPrompt(
         attempt === 0
           ? prompt
           : `${prompt}\n\nYour previous response was not valid JSON matching the required shape. Return ONLY the JSON object, nothing else.`
