@@ -1,7 +1,9 @@
-// Point this at your deployed backend before publishing to GitHub Pages.
-const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-  ? 'http://localhost:3000'
-  : 'https://ai-presentation-reviewer.onrender.com';
+// Use the deployed backend by default; local hosts use the local server.
+const API_URL = 'https://ai-presentation-reviewer.onrender.com';
+const LOCAL_API_URL = 'http://localhost:3000';
+const REQUEST_API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? LOCAL_API_URL
+  : API_URL;
 
 const form = document.getElementById("upload-form");
 const fileInput = document.getElementById("deck");
@@ -151,7 +153,7 @@ form.addEventListener("submit", async (e) => {
   formData.append("deck", file);
 
   try {
-   const res = await fetch(`${API_URL}/api/evaluate`, {
+  const res = await fetch(`${REQUEST_API_URL}/api/evaluate`, {
       method: "POST",
       body: formData,
     });
