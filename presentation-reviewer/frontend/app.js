@@ -164,7 +164,7 @@ form.addEventListener("submit", async (e) => {
   formData.append("deck", file);
 
   try {
-  const res = await fetch(`${REQUEST_API_URL}/api/evaluate`, {
+  const res = await fetch(`https://project-invent-codeday.vercel.app/api/evaluate`, {
       method: "POST",
       body: formData,
     });
