@@ -126,6 +126,17 @@ h2 { margin: 0 0 1.25rem; color: var(--marine-bright); font-family: Georgia, ser
 .feedback-list { display: grid; gap: 0.8rem; margin: 0; padding: 0; list-style: none; color: var(--muted); line-height: 1.55; }
 .feedback-list li { position: relative; padding-left: 1.25rem; }
 .feedback-list li::before { position: absolute; left: 0; color: var(--marine-bright); content: "→"; }
+
+.compliance-card { padding: 1.5rem; }
+.compliance-list { display: grid; gap: 0.9rem; margin: 0; padding: 0; list-style: none; }
+.compliance-item { padding: 0.85rem 1rem; border: 1px solid var(--border); border-radius: 9px; background: rgba(54, 169, 232, 0.06); }
+.compliance-item.missing { border-color: color-mix(in srgb, var(--error) 45%, var(--border)); background: color-mix(in srgb, var(--error) 8%, transparent); }
+.compliance-head { display: flex; align-items: center; gap: 0.6rem; }
+.compliance-mark { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; font-size: 0.85rem; font-weight: 700; flex: 0 0 auto; color: #021018; background: var(--marine-bright); }
+.compliance-item.missing .compliance-mark { color: #fff; background: var(--error); }
+.compliance-label { color: var(--text); font-weight: 700; }
+.compliance-note { margin: 0.45rem 0 0 1.85rem; color: var(--muted); font-size: 0.88rem; line-height: 1.5; }
+
 .footer { padding: 2rem 0 0.5rem; color: var(--muted); font-size: 0.78rem; text-align: center; }
 
 @media (max-width: 560px) {
