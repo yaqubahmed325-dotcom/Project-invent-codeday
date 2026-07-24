@@ -1,3 +1,4 @@
+
 const RUBRIC_KEYS = [
   "organization",
   "clarity",
@@ -39,7 +40,6 @@ function slidesToPrompt(slides) {
 }
  
 function extractJson(raw) {
-  // Gemini may still wrap output in ```json fences despite instructions — strip them.
   const cleaned = raw.replace(/```json/gi, "").replace(/```/g, "").trim();
   const start = cleaned.indexOf("{");
   const end = cleaned.lastIndexOf("}");
@@ -64,17 +64,17 @@ function validateResult(result) {
 }
  
 /**
- * Sends one prompt to the Gemini API over plain HTTPS and returns the raw
- * assistant text. This is a stateless REST call (no subprocess, no native
- * binary), so it works fine inside a Vercel serverless function — unlike the
- * old Copilot-CLI-based approach.
+ * Sends one prompt to the Groq API (OpenAI-compatible chat completions
+ * endpoint) over plain HTTPS and returns the raw assistant text. Stateless
+ * REST call - no subprocess, no native binary - so it works fine inside a
+ * Vercel serverless function.
  */
-async function runGeminiPrompt(prompt) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error("GEMINI_API_KEY is not set");
+async function runGroqPrompt(prompt) {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) throw new Error("GROQ_API_KEY is not set");
  
-  const model = process.env.GEMINI_MODEL || "gemini-2.0-flash";
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  const model = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
+  const url = "https://api.groq.com/openai/v1/chat/completions";
  
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 60_000);
@@ -83,16 +83,22 @@ async function runGeminiPrompt(prompt) {
   try {
     res = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
       signal: controller.signal,
       body: JSON.stringify({
-        system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.4 },
+        model,
+        temperature: 0.4,
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: prompt },
+        ],
       }),
     });
   } catch (err) {
-    if (err.name === "AbortError") throw new Error("Gemini did not respond within the timeout");
+    if (err.name === "AbortError") throw new Error("Groq did not respond within the timeout");
     throw err;
   } finally {
     clearTimeout(timeout);
@@ -100,12 +106,12 @@ async function runGeminiPrompt(prompt) {
  
   if (!res.ok) {
     const errBody = await res.text().catch(() => "");
-    throw new Error(`Gemini API error ${res.status}: ${errBody.slice(0, 300)}`);
+    throw new Error(`Groq API error ${res.status}: ${errBody.slice(0, 300)}`);
   }
  
   const data = await res.json();
-  const text = data?.candidates?.[0]?.content?.parts?.map((p) => p.text).join("") ?? "";
-  if (!text) throw new Error("Gemini returned an empty response");
+  const text = data?.choices?.[0]?.message?.content ?? "";
+  if (!text) throw new Error("Groq returned an empty response");
   return text;
 }
  
@@ -115,7 +121,7 @@ export async function evaluateDeck(slides) {
   let lastError;
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      const raw = await runGeminiPrompt(
+      const raw = await runGroqPrompt(
         attempt === 0
           ? prompt
           : `${prompt}\n\nYour previous response was not valid JSON matching the required shape. Return ONLY the JSON object, nothing else.`
@@ -124,6 +130,7 @@ export async function evaluateDeck(slides) {
       return validateResult(parsed);
     } catch (err) {
       lastError = err;
+      if (err.message.includes("429")) break;
     }
   }
   throw new Error(`Evaluation failed after retry: ${lastError.message}`);
