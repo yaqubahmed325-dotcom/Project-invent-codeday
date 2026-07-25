@@ -19,7 +19,7 @@ const overallNumEl = document.getElementById("overall-num");
 const gradeLabelEl = document.getElementById("grade-label");
 const gradeSubEl = document.getElementById("grade-sub");
 const feedbackList = document.getElementById("feedback-list");
-const complianceEl = document.getElementById("compliance-checklist");
+const complianceEl = document.getElementById("compliance-list");
 const downloadReportBtn = document.getElementById("download-report");
 const themeToggle = document.getElementById("theme-toggle");
  
