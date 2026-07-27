@@ -1,6 +1,6 @@
 
 // Use the deployed backend by default; local hosts use the local server.
-const API_URL = 'https://project-invent-codeday.vercel.app/';
+const API_URL = 'http://project-invent-codeday.yaqub-ahmed325.workers.dev';
 const LOCAL_API_URL = 'http://localhost:3000';
 const REQUEST_API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
   ? LOCAL_API_URL
