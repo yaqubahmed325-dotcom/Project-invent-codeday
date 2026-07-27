@@ -221,7 +221,10 @@ form.addEventListener("submit", async (e) => {
     setStatus(`Done — evaluated ${data.slide_count} slide(s).`);
     renderResults(data);
   } catch (err) {
-    setStatus(err.message, true);
+    const message = err.message.includes("Failed to fetch")
+      ? "Did not meet the requirements. This file is larger than 4.5mb"
+      : err.message;
+    setStatus(message, true);
   } finally {
     submitBtn.disabled = false;
   }
