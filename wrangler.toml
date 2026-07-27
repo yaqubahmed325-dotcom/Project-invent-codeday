@@ -1,0 +1,8 @@
+name = "ai-presentation-reviewer"
+main = "worker.js"
+compatibility_date = "2026-01-01"
+
+[vars]
+# GROQ_API_KEY and GROQ_MODEL are set as secrets via `wrangler secret put`
+# or in the Cloudflare dashboard — not committed here.
+ALLOWED_ORIGIN = "https://yaqubahmed325-dotcom.github.io"
